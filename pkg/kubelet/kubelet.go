@@ -1051,6 +1051,7 @@ type Kubelet struct {
 	resourceAnalyzer serverstats.ResourceAnalyzer
 
 	// Whether or not we should have the QOS cgroup hierarchy for resource management
+	// qos(服务质量)
 	cgroupsPerQOS bool
 
 	// If non-empty, pass this to the container runtime as the root cgroup.
@@ -1873,6 +1874,7 @@ func (kl *Kubelet) syncTerminatedPod(ctx context.Context, pod *v1.Pod, podStatus
 // Get pods which should be resynchronized. Currently, the following pod should be resynchronized:
 //   * pod whose work is ready.
 //   * internal modules that request sync of a pod.
+
 func (kl *Kubelet) getPodsToSync() []*v1.Pod {
 	allPods := kl.podManager.GetPods()
 	podUIDs := kl.workQueue.GetWork()
@@ -2108,6 +2110,7 @@ func (kl *Kubelet) syncLoopIteration(configCh <-chan kubetypes.PodUpdate, handle
 				kl.cleanUpContainersInPod(e.ID, containerID)
 			}
 		}
+
 	case <-syncCh:
 		// Sync pods waiting for sync
 		podsToSync := kl.getPodsToSync()
@@ -2138,14 +2141,18 @@ func (kl *Kubelet) syncLoopIteration(configCh <-chan kubetypes.PodUpdate, handle
 			status = "started"
 		}
 		handleProbeSync(kl, update, handler, "startup", status)
+
+	// syncloop 家政（指代 清理垃圾）
 	case <-housekeepingCh:
 		if !kl.sourcesReady.AllReady() {
 			// If the sources aren't ready or volume manager has not yet synced the states,
 			// skip housekeeping, as we may accidentally delete pods from unready sources.
+			// 如果资源还没准备好，或者volume管理还没同步好状态，跳过house keeping（垃圾清理），因为我们有可能错误地删除unready的资源里的pod
 			klog.V(4).InfoS("SyncLoop (housekeeping, skipped): sources aren't ready yet")
 		} else {
 			start := time.Now()
 			klog.V(4).InfoS("SyncLoop (housekeeping)")
+			// 清理Pod
 			if err := handler.HandlePodCleanups(); err != nil {
 				klog.ErrorS(err, "Failed cleaning pods")
 			}

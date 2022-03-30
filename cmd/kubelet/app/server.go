@@ -351,6 +351,8 @@ func loadConfigFile(name string) (*kubeletconfiginternal.KubeletConfiguration, e
 
 // UnsecuredDependencies returns a Dependencies suitable for being run, or an error if the server setup
 // is not valid.  It will not start any background processes, and does not include authentication/authorization
+// UnsecuredDependencies 返回一个适合执行的的依赖，或者一个服务配置无效的错误。
+// 不会启动任何后台进程，也因此不包含 authentication/authorization
 func UnsecuredDependencies(s *options.KubeletServer, featureGate featuregate.FeatureGate) (*kubelet.Dependencies, error) {
 	// Initialize the TLS Options
 	tlsOptions, err := InitializeTLS(&s.KubeletFlags, &s.KubeletConfiguration)

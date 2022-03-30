@@ -1046,6 +1046,10 @@ func (kl *Kubelet) deleteOrphanedMirrorPods() {
 // is executing which means no new pods can appear.
 // NOTE: This function is executed by the main sync loop, so it
 // should not contain any blocking calls.
+
+// 执行一系列的清理工作，包括关停pod workers， 杀掉不想要的pods，移除 orphaned volumes/pod 的目录。
+// 当这方法执行中，没有配置改变会被发送到pod workers，意味着不会有新pods出现
+// 这个方法被主sync loop执行，不应该有任何阻塞调用
 func (kl *Kubelet) HandlePodCleanups() error {
 	// The kubelet lacks checkpointing, so we need to introspect the set of pods
 	// in the cgroup tree prior to inspecting the set of pods in our pod manager.

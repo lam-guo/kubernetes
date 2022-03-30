@@ -219,8 +219,10 @@ func (g *GenericPLEG) relist() {
 		oldPod := g.podRecords.getOld(pid)
 		pod := g.podRecords.getCurrent(pid)
 		// Get all containers in the old and the new pod.
+		// 获取新和旧pod的所有容器
 		allContainers := getContainersFromPods(oldPod, pod)
 		for _, container := range allContainers {
+			// 计算PodLifecycle事件
 			events := computeEvents(oldPod, pod, &container.ID)
 			for _, e := range events {
 				updateEvents(eventsByPodID, e)
