@@ -33,6 +33,10 @@ import (
 // associated with it which runs the probe loop until the container permanently terminates, or the
 // stop channel is closed. The worker uses the probe Manager's statusManager to get up-to-date
 // container IDs.
+
+// worker处理他分配到的容器的周期性勘探。
+// 每个worker有一个【直到容器永久终止或stop channel关闭之前】都在执行勘探循环的go-routine。
+// worker使用probe manager的statusManager去获取最新的容器IDs
 type worker struct {
 	// Channel for stopping the probe.
 	stopCh chan struct{}
@@ -153,9 +157,12 @@ func (w *worker) run() {
 		ProberResults.Delete(w.proberResultsUnknownMetricLabels)
 	}()
 
+	// label用法，跳出for w.doProbe循环
 probeLoop:
 	for w.doProbe() {
 		// Wait for next probe tick.
+		// 等待下次probe
+		// 如果stopCh有消息，断开probeLoop
 		select {
 		case <-w.stopCh:
 			break probeLoop
@@ -168,6 +175,10 @@ probeLoop:
 
 // stop stops the probe worker. The worker handles cleanup and removes itself from its manager.
 // It is safe to call stop multiple times.
+// stop() 停止probe worker。
+// worker处理清理和从他的manager中移除自己。
+// 可以安全地调用多次
+// 会停止probe loop
 func (w *worker) stop() {
 	select {
 	case w.stopCh <- struct{}{}:
@@ -177,6 +188,8 @@ func (w *worker) stop() {
 
 // doProbe probes the container once and records the result.
 // Returns whether the worker should continue.
+// 勘察一遍容器并且记录结果
+// 返回这个worker是否应该继续
 func (w *worker) doProbe() (keepGoing bool) {
 	defer func() { recover() }() // Actually eat panics (HandleCrash takes care of logging)
 	defer runtime.HandleCrash(func(_ interface{}) { keepGoing = true })
@@ -189,13 +202,16 @@ func (w *worker) doProbe() (keepGoing bool) {
 	}
 
 	// Worker should terminate if pod is terminated.
+	// pod终止了worker也应该终止
 	if status.Phase == v1.PodFailed || status.Phase == v1.PodSucceeded {
 		klog.V(3).InfoS("Pod is terminated, exiting probe worker",
 			"pod", klog.KObj(w.pod), "phase", status.Phase)
 		return false
 	}
 
+	// 通过worker容器名获取容器信息
 	c, ok := podutil.GetContainerStatus(status.ContainerStatuses, w.container.Name)
+	// 如果容器没创建或者被删除，返回true,等下一次信息
 	if !ok || len(c.ContainerID) == 0 {
 		// Either the container has not been created yet, or it was deleted.
 		klog.V(3).InfoS("Probe target container not found",
@@ -203,6 +219,9 @@ func (w *worker) doProbe() (keepGoing bool) {
 		return true // Wait for more information.
 	}
 
+	// 如果woker的容器id不等于通过GetContainerStatus获取容器id，worker的容器id改为GetContainerStatus获取的容器id
+	// 记录一条容器初始化信息
+	// 恢复（继续）勘察
 	if w.containerID.String() != c.ContainerID {
 		if !w.containerID.IsEmpty() {
 			w.resultsManager.Remove(w.containerID)
@@ -213,11 +232,14 @@ func (w *worker) doProbe() (keepGoing bool) {
 		w.onHold = false
 	}
 
+	// worker一直等待，直到有新的容器
 	if w.onHold {
 		// Worker is on hold until there is a new container.
 		return true
 	}
 
+	// 如果没有勘探到正在运行的容器
+	// 如果容器不会被重启就中断了，判断依据（容器被终止 或 RestartPolicy不为RestartPolicyNever）
 	if c.State.Running == nil {
 		klog.V(3).InfoS("Non-running container probed",
 			"pod", klog.KObj(w.pod), "containerName", w.container.Name)
@@ -230,6 +252,10 @@ func (w *worker) doProbe() (keepGoing bool) {
 	}
 
 	// Graceful shutdown of the pod.
+	// 优雅关闭pod
+	// 如果有DeletionTimestamp（资源关闭日期）且probeType为liveness或startup
+	// 记录勘探结果为success
+	// 停止勘探
 	if w.pod.ObjectMeta.DeletionTimestamp != nil && (w.probeType == liveness || w.probeType == startup) {
 		klog.V(3).InfoS("Pod deletion requested, setting probe result to success",
 			"probeType", w.probeType, "pod", klog.KObj(w.pod), "containerName", w.container.Name)
@@ -243,11 +269,13 @@ func (w *worker) doProbe() (keepGoing bool) {
 		return false
 	}
 
+	// 启动时间小于InitialDelaySeconds（初始化延迟时间）先跳过这次勘探
 	// Probe disabled for InitialDelaySeconds.
 	if int32(time.Since(c.State.Running.StartedAt.Time).Seconds()) < w.spec.InitialDelaySeconds {
 		return true
 	}
 
+	// TODO: 还没看懂
 	if c.Started != nil && *c.Started {
 		// Stop probing for startup once container has started.
 		// we keep it running to make sure it will work for restarted container.
@@ -264,6 +292,8 @@ func (w *worker) doProbe() (keepGoing bool) {
 	// TODO: in order for exec probes to correctly handle downward API env, we must be able to reconstruct
 	// the full container environment here, OR we must make a call to the CRI in order to get those environment
 	// values from the running container.
+	// 为了执行勘 探获 得正确地处理downward API env（啥玩意？）。
+	// 我们必须在这重新组合好完全的容器环境信息,或者我们必须调用CRI去 获取正在运行的容器的环境信息
 	result, err := w.probeManager.prober.probe(w.probeType, w.pod, status, w.container, w.containerID)
 	if err != nil {
 		// Prober error, throw away the result.

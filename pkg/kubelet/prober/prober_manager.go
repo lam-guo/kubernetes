@@ -64,6 +64,8 @@ type Manager interface {
 
 	// CleanupPods handles cleaning up pods which should no longer be running.
 	// It takes a map of "desired pods" which should not be cleaned up.
+	// 处理不应该继续运行的pod的清理
+	// 用desired pods这个map来区分不该清理的
 	CleanupPods(desiredPods map[types.UID]sets.Empty)
 
 	// UpdatePodStatus modifies the given PodStatus with the appropriate Ready state for each

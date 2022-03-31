@@ -1055,6 +1055,8 @@ func (kl *Kubelet) HandlePodCleanups() error {
 	// in the cgroup tree prior to inspecting the set of pods in our pod manager.
 	// this ensures our view of the cgroup tree does not mistakenly observe pods
 	// that are added after the fact...
+	// kubelet 缺少检查点，需要从之前的cgroup里的pods来查看我们pod manager里的pods
+	// 这确保了我们不会在cgroup树视图中错误地观察到在这之后添加的pods （#可能理解不太对）
 	var (
 		cgroupPods map[types.UID]cm.CgroupName
 		err        error
