@@ -265,6 +265,7 @@ type DelegationTarget interface {
 
 func (s *GenericAPIServer) UnprotectedHandler() http.Handler {
 	// when we delegate, we need the server we're delegating to choose whether or not to use gorestful
+	// 当我们去委托的时候，我们需要我们委托的服务选择是否使用gorestful
 	return s.Handler.Director
 }
 func (s *GenericAPIServer) PostStartHooks() map[string]postStartHookEntry {
@@ -286,6 +287,7 @@ func (s *GenericAPIServer) NextDelegate() DelegationTarget {
 
 // RegisterMuxAndDiscoveryCompleteSignal registers the given signal that will be used to determine if all known
 // HTTP paths have been registered. It is okay to call this method after instantiating the generic server but before running.
+// 如果所有的Http路由已经被注册了，给出的信号信道会被注册。可以在generic server实例化时调用，但要在运行之前。
 func (s *GenericAPIServer) RegisterMuxAndDiscoveryCompleteSignal(signalName string, signal <-chan struct{}) error {
 	if _, exists := s.muxAndDiscoveryCompleteSignals[signalName]; exists {
 		return fmt.Errorf("%s already registered", signalName)
@@ -344,6 +346,7 @@ type preparedGenericAPIServer struct {
 }
 
 // PrepareRun does post API installation setup steps. It calls recursively the same function of the delegates.
+// 进行请求API实例化阶段步骤，会递归调用被委托者的相同方法
 func (s *GenericAPIServer) PrepareRun() preparedGenericAPIServer {
 	s.delegationTarget.PrepareRun()
 

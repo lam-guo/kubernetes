@@ -300,6 +300,7 @@ func (w *worker) doProbe() (keepGoing bool) {
 		return true
 	}
 
+	// 性能指标计数器增加相应类型计数
 	switch result {
 	case results.Success:
 		ProberResults.With(w.proberResultsSuccessfulMetricLabels).Inc()
@@ -316,12 +317,14 @@ func (w *worker) doProbe() (keepGoing bool) {
 		w.resultRun = 1
 	}
 
+	// 如果成功或失败次数小于阈值，不管了，状态不变
 	if (result == results.Failure && w.resultRun < int(w.spec.FailureThreshold)) ||
 		(result == results.Success && w.resultRun < int(w.spec.SuccessThreshold)) {
 		// Success or failure is below threshold - leave the probe state unchanged.
 		return true
 	}
 
+	// 保存状态
 	w.resultsManager.Set(w.containerID, result, w.pod)
 
 	if (w.probeType == liveness || w.probeType == startup) && result == results.Failure {
