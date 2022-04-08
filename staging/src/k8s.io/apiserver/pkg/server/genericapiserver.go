@@ -388,6 +388,7 @@ func (s *GenericAPIServer) PrepareRun() preparedGenericAPIServer {
 
 // Run spawns the secure http server. It only returns if stopCh is closed
 // or the secure port cannot be listened on initially.
+// 产生安全的http服务器。只在stopCh关闭或者无法在实例化时监听端口返回。
 func (s preparedGenericAPIServer) Run(stopCh <-chan struct{}) error {
 	delayedStopCh := s.lifecycleSignals.AfterShutdownDelayDuration
 	shutdownInitiatedCh := s.lifecycleSignals.ShutdownInitiated
@@ -395,6 +396,8 @@ func (s preparedGenericAPIServer) Run(stopCh <-chan struct{}) error {
 	// spawn a new goroutine for closing the MuxAndDiscoveryComplete signal
 	// registration happens during construction of the generic api server
 	// the last server in the chain aggregates signals from the previous instances
+	// 关闭MuxAndDiscoveryComplete signal的go协程。
+	// 委托链中最后一个服务器从前面所有实例聚合signals
 	go func() {
 		for _, muxAndDiscoveryCompletedSignal := range s.GenericAPIServer.MuxAndDiscoveryCompleteSignals() {
 			select {
