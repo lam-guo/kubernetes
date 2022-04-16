@@ -233,6 +233,7 @@ type EndpointReconcilerConfig struct {
 }
 
 // Instance contains state for a Kubernetes cluster api server instance.
+// Instance包含k8s集群api server实例的状态
 type Instance struct {
 	GenericAPIServer *genericapiserver.GenericAPIServer
 

@@ -38,6 +38,13 @@ import (
 // Think of it like a mini-controller that is super privileged and gets to run in-process
 // If you use this feature, tag @deads2k on github who has promised to review code for anyone's PostStartHook
 // until it becomes easier to use.
+// PostStartHookFunc是一个服务启动后被调用的方法
+// 必须处理如下情况
+// 1.在多个api server进程中异步起动
+// 2.不同进程中同样行为的冲突
+// 3.
+// 4. api server在你的钩子完成前访问了
+// 把这个看为一个有超级权限且（跑在进程中 ？）的mini controller
 type PostStartHookFunc func(context PostStartHookContext) error
 
 // PreShutdownHookFunc is a function that can be added to the shutdown logic.

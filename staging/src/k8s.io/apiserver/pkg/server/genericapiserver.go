@@ -90,6 +90,7 @@ type APIGroupInfo struct {
 }
 
 // GenericAPIServer contains state for a Kubernetes cluster api server.
+// GenericAPIServer包含一个k8s集群api server的状态
 type GenericAPIServer struct {
 	// discoveryAddresses is used to build cluster IPs for discovery.
 	discoveryAddresses discovery.Addresses
@@ -700,6 +701,7 @@ func (s *GenericAPIServer) newAPIGroupVersion(apiGroupInfo *APIGroupInfo, groupV
 
 // NewDefaultAPIGroupInfo returns an APIGroupInfo stubbed with "normal" values
 // exposed for easier composition from other packages
+// 返回一个存储了"normal"值的APIGroupInfo，给其他包一个更简单的组合
 func NewDefaultAPIGroupInfo(group string, scheme *runtime.Scheme, parameterCodec runtime.ParameterCodec, codecs serializer.CodecFactory) APIGroupInfo {
 	return APIGroupInfo{
 		PrioritizedVersions:          scheme.PrioritizedVersionsForGroup(group),
